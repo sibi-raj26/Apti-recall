@@ -1,0 +1,15 @@
+from rest_framework import status
+
+
+class ApiStatus:
+    OK = "ok"
+    ERROR = "error"
+
+
+class ErrorCode:
+    VALIDATION_ERROR = "VALIDATION_ERROR"
+    NOT_FOUND = "NOT_FOUND"
+    PERMISSION_DENIED = "PERMISSION_DENIED"
+    AUTHENTICATION_FAILED = "AUTHENTICATION_FAILED"
+    INTERNAL_ERROR = "INTERNAL_ERROR"
+    NEEDS_VERIFICATION = "NEEDS_VERIFICATION"
