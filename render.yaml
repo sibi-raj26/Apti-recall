@@ -54,8 +54,7 @@ services:
     branch: main
     rootDir: .
     dockerfilePath: ./Dockerfile
-    entrypoint: /app/celery-entrypoint.sh
-    command: celery -A backend.celery worker --loglevel=info
+    dockerCommand: celery -A backend.celery worker --loglevel=info
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: backend.settings.production
