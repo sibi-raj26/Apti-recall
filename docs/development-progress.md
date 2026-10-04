@@ -2762,3 +2762,45 @@ These tests use unauthenticated `APIClient` to access endpoints that now require
 ### Final Status
 `PHASE 14 COMPLETE`
 
+---
+
+## Frontend UI Redesign — Step 1
+
+**Status:** Completed
+
+### Completed
+- Inspected existing frontend architecture, pages, components, services, types, tests, and styling
+- Redesigned question/solution UI with stronger visual hierarchy
+- Added question navigation to QuestionDetail: Previous/Next with Question X of Y indicator
+- Disabled Previous on first question, Next on final question
+- Preserved existing authentication, API layer, routing, loading/error states
+- Improved Topics, TopicDetail, Questions, and Dashboard page visuals
+- Improved Layout navigation active states
+- Added shared styles constants file (`frontend/src/styles.ts`)
+- Created QuestionDetail navigation tests
+- Frontend tests: 146 passed
+- TypeScript: PASS
+- Production build: PASS
+- Backend app tests: 290 passed
+- Manual browser testing: NOT PERFORMED
+
+### Files Changed
+- `frontend/src/styles.ts` — new shared style constants
+- `frontend/src/pages/QuestionDetail.tsx` — redesigned with navigation
+- `frontend/src/pages/Questions.tsx` — improved card design
+- `frontend/src/pages/TopicDetail.tsx` — improved visual hierarchy
+- `frontend/src/pages/Topics.tsx` — improved card design
+- `frontend/src/pages/Dashboard.tsx` — improved card hierarchy
+- `frontend/src/components/Layout.tsx` — improved navigation states
+- `frontend/src/pages/QuestionDetail.test.tsx` — new navigation tests
+
+### Known Limitations
+- Manual browser testing not performed in this environment
+- QuestionDetail navigation relies on topic question list; if topic questions fail to load, navigation is unavailable but question still displays
+
+### Production Deep-Link Fix
+- Issue: Direct navigation to `/questions/:id` on deployed Render frontend returned "Not Found"
+- Root cause: Render Static Site did not have an SPA rewrite rule; it looked for physical files at `/questions/:id` instead of serving `index.html`
+- Fix: Added Render rewrite configuration in `render.yaml` to serve `index.html` for all paths, enabling React Router to handle client-side routes
+- Validation: `render.yaml` is valid YAML; frontend tests pass; TypeScript passes; production build succeeds
+

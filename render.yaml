@@ -41,6 +41,9 @@ services:
     rootDir: frontend
     buildCommand: npm ci && npm run build
     staticPublishPath: ./dist
+    rewrites:
+      - source: /*
+        destination: /index.html
     envVars:
       - key: VITE_API_URL
         value: https://aptirecall-web.onrender.com/api
