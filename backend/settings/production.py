@@ -122,7 +122,14 @@ LOGS_DIR.mkdir(parents=True, exist_ok=True)
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL")
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND")
 if not CELERY_BROKER_URL:
-    raise RuntimeError("CELERY_BROKER_URL environment variable is required in production")
+    import warnings
+
+    warnings.warn(
+        "CELERY_BROKER_URL is not set. Celery worker is deferred for this deployment. "
+        "Background-task execution is not available until Celery and Redis are provisioned.",
+        RuntimeWarning,
+        stacklevel=2,
+    )
 
 REST_FRAMEWORK = {
     **base.REST_FRAMEWORK,

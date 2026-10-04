@@ -215,27 +215,54 @@ The 12 stale tests are in `tests/test_api.py::TestTopicAPI` and `tests/test_api.
 
 ## 11. Production Deployment on Render
 
-This section documents the first controlled production deployment of AptiRecall using Render. This deployment uses the existing Docker architecture without redesigning the application.
+This section documents the first controlled production deployment of AptiRecall using Render's free-tier resources where supported.
 
 ### Chosen platform
 
 Render was chosen because it supports:
 
-- Docker-based web services
-- Managed PostgreSQL
-- Managed Redis
-- Background worker services
+- Docker-based web services on the free plan
+- Managed PostgreSQL on the free plan
+- Static Site hosting for the React frontend on the free plan
 - Environment variable configuration
 - HTTPS termination
 
-### Required services
+### Free-tier architecture
+
+```text
+React frontend
+  ↓
+Render Static Site (free)
+  ↓
+Django REST API on Render Web Service (free)
+  ↓
+Render PostgreSQL (free)
+```
+
+### Resources on Render free plan
+
+| Resource | Plan | Notes |
+|----------|------|-------|
+| Web service | free | Spins down after inactivity; cold start on first request |
+| PostgreSQL | free | Limited storage; 90-day renewal cycle |
+| Static Site | free | Serves built frontend assets |
+| Celery Worker | deferred | Requires paid plan; no current implemented features depend on it |
+| Redis / Key Value | deferred | Only required for Celery; not needed without worker |
+
+### Render services
 
 Deploy the following services on Render:
 
-1. **Web service** — Django + Gunicorn backend API
-2. **Worker service** — Celery worker
-3. **PostgreSQL** — managed database instance
-4. **Redis** — managed Redis instance
+1. **Web service** (`aptirecall-web`) — Django + Gunicorn backend API using the existing Dockerfile
+2. **Static Site** (`aptirecall-frontend`) — React/Vite frontend build output
+3. **PostgreSQL** (`aptirecall-db`) — managed database instance
+
+### Deferred services
+
+The following services are deferred to a future paid deployment:
+
+1. **Celery Worker** — The repository contains Celery infrastructure, but no currently implemented user-facing feature requires background-task execution. The worker is preserved in the codebase for future use.
+2. **Redis / Key Value** — Redis is only required as the Celery broker and result backend. Since the Celery worker is deferred, Redis is not provisioned.
 
 ### Environment variables
 
@@ -251,32 +278,24 @@ ALLOWED_HOSTS=<production-web-service-url>
 CORS_ALLOWED_ORIGINS=<production-frontend-origin>
 CSRF_TRUSTED_ORIGINS=<production-frontend-origin>
 DATABASE_URL=<render-postgresql-url>
-CELERY_BROKER_URL=<render-redis-url>
-CELERY_RESULT_BACKEND=<render-redis-url>
 SECURE_SSL_REDIRECT=True
 ```
 
-#### Worker service
+#### Static Site
 
 ```text
-DJANGO_SETTINGS_MODULE=backend.settings.production
-DJANGO_SECRET_KEY=<same-as-web-service>
-DEBUG=False
-ALLOWED_HOSTS=<production-web-service-url>
-DATABASE_URL=<render-postgresql-url>
-CELERY_BROKER_URL=<render-redis-url>
-CELERY_RESULT_BACKEND=<render-redis-url>
+VITE_API_URL=https://<backend-domain>/api
 ```
 
 ### Frontend deployment
 
-The React/Vite frontend must be built and deployed separately. Options:
+The React/Vite frontend is deployed as a Render Static Site:
 
-1. **Static hosting** — deploy the `frontend/dist` output to a static hosting service such as Netlify, Vercel, or Render Static Sites.
-   - Set `VITE_API_URL=https://<backend-domain>/api` during the production build.
-   - Ensure the backend `CORS_ALLOWED_ORIGINS` includes the deployed frontend origin.
+- **Build command**: `npm ci && npm run build`
+- **Publish directory**: `dist`
+- **Environment variable**: `VITE_API_URL=https://aptirecall-web.onrender.com/api`
 
-2. **Served from Django** — alternatively, build the frontend and serve it through Django by placing the built assets in `staticfiles/`. This requires frontend build integration into the Docker image or deployment pipeline.
+The frontend build uses the existing Vite project structure. No additional frontend code changes are required.
 
 ### Migration and static collection
 
@@ -313,12 +332,13 @@ Perform a minimal smoke test after deployment:
 
 1. Backend health endpoint returns HTTP 200.
 2. Gunicorn is running.
-3. Celery worker is connected to Redis and loads Django.
-4. Frontend loads successfully.
-5. User registration works.
-6. User login works and returns JWT tokens.
-7. Authenticated API call succeeds.
-8. Logout succeeds.
+3. Frontend loads successfully.
+4. User registration works.
+5. User login works and returns JWT tokens.
+6. Authenticated API call succeeds.
+7. Logout succeeds.
+
+Note: Celery worker and Redis-dependent features are not available in the free-tier deployment.
 
 ### Security verification
 
@@ -339,7 +359,7 @@ After deployment, verify:
 
 To roll back to a previous deployment version:
 
-1. In the Render dashboard, locate the web service and worker service.
+1. In the Render dashboard, locate the web service and static site.
 2. Select the previous successful deploy and promote it to the current version.
 3. Inspect deployment logs to identify the failure cause.
 4. Verify health endpoint after rollback:
@@ -347,8 +367,6 @@ To roll back to a previous deployment version:
    ```bash
    curl https://<backend-domain>/api/health/
    ```
-
-5. Verify Celery worker is running and connected to Redis.
 
 Database rollback limitations:
 
@@ -364,4 +382,11 @@ Database rollback limitations:
 ### Render Blueprint
 
 A Render Blueprint (`render.yaml`) is provided for reproducible infrastructure setup. Do not commit real secrets. Use Render environment variable references for all sensitive values.
+
+### Known limitations
+
+- **PostgreSQL free tier**: Limited storage; database expires after 90 days and must be renewed or upgraded.
+- **Web service free tier**: Spins down after periods of inactivity; first request after spin-down may experience a cold start delay.
+- **Celery worker**: Not available on the free tier; background-task execution is deferred.
+- **Redis / Key Value**: Not provisioned in the free-tier deployment because it is only required for Celery.
 
