@@ -9,6 +9,9 @@ fi
 echo "Running database migrations..."
 python manage.py migrate --noinput
 
+echo "Seeding learning content..."
+python manage.py seed_learning_content
+
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
