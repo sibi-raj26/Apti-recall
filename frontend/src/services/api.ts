@@ -8,6 +8,13 @@ const api = axios.create({
   },
 })
 
+const authApiInstance = axios.create({
+  baseURL: (import.meta.env.VITE_API_URL as string | undefined) || '/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
+
 api.interceptors.request.use(
   (config) => {
     const access = localStorage.getItem('aptirecall_access')
@@ -31,9 +38,12 @@ api.interceptors.response.use(
       const refresh = localStorage.getItem('aptirecall_refresh')
       if (refresh) {
         try {
-          const { data } = await api.post('/auth/refresh/', { refresh })
+          const { data } = await authApiInstance.post('/auth/refresh/', { refresh })
           const newAccess = data.data.access
           localStorage.setItem('aptirecall_access', newAccess)
+          if (data.data.refresh) {
+            localStorage.setItem('aptirecall_refresh', data.data.refresh)
+          }
           error.config.headers.Authorization = `Bearer ${newAccess}`
           return api.request(error.config)
         } catch {
