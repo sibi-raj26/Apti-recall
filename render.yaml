@@ -34,18 +34,19 @@ services:
           name: aptirecall-db
           property: connectionString
 
-  - type: web
+  - type: static
     name: aptirecall-frontend
-    runtime: static
     branch: main
+    rootDir: .
     buildCommand: cd frontend && npm ci && npm run build
-    staticPublishPath: frontend/dist
-    rewrites:
-      - source: /*
-        destination: /index.html
+    staticPublishPath: ./frontend/dist
     envVars:
       - key: VITE_API_URL
         value: https://aptirecall-web.onrender.com/api
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
 
 databases:
   - name: aptirecall-db
