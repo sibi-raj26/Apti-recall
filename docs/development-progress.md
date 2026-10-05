@@ -2804,3 +2804,9 @@ These tests use unauthenticated `APIClient` to access endpoints that now require
 - Fix: Added Render rewrite configuration in `render.yaml` to serve `index.html` for all paths, enabling React Router to handle client-side routes
 - Validation: `render.yaml` is valid YAML; frontend tests pass; TypeScript passes; production build succeeds
 
+### PaddleOCR Dependency Removal
+- Unused `paddlepaddle>=2.6,<2.7` and `paddleocr>=2.7,<2.8` were removed from `requirements.txt`
+- Production OCR uses Tesseract only; no backend imports of PaddlePaddle/PaddleOCR exist
+- Tesseract is already installed in the Docker image
+- Backend tests: 290 passed; full regression: 401 passed, 12 pre-existing stale failures in `tests/test_api.py` remain unchanged
+
